@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Video Stranica s Automatskim Prebacivanjem</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>samo dio pjesme koji znaš</h1>
+        <div id="player"></div>
+        <button id="nextButton">Sljedeći Video</button>
+    </div>
+
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script>
+        let player;
+        let autoChangeInterval;
+        const playlistId = 'PL0oP4UWb9H3eqcnHBoHkpDAPe6Nhv0UNw';
+        let currentVideoIndex = 0;
+        let playlist = [];
+
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                height: '315',
+                width: '560',
+                videoId: '',
+                playerVars: {
+                    autoplay: 1,
+                    controls: 1
+                },
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+        }
+
+        function onPlayerReady(event) {
+            fetchPlaylist().then(() => {
+                loadVideo(currentVideoIndex);
+                startAutoChange();
+            });
+            document.getElementById('nextButton').addEventListener('click', nextVideo);
+        }
+
+        function onPlayerStateChange(event) {
+            if (event.data == YT.PlayerState.ENDED) {
+                nextVideo();
+            }
+        }
+
+        function fetchPlaylist() {
+            return fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId=${playlistId}&key=AIzaSyBPBUlwP8OXShwkbA6wBPtyo2THvzQUgEk`)
+                .then(response => response.json())
+                .then(data => {
+                    playlist = data.items.map(item => ({
+                        id: item.snippet.resourceId.videoId,
+                        title: item.snippet.title
+                    }));
+                });
+        }
+
+        function loadVideo(index) {
+            if (index < playlist.length) {
+                player.loadVideoById({
+                    videoId: playlist[index].id,
+                    startSeconds: 40
+                });
+                currentVideoIndex = index;
+            }
+        }
+
+        function nextVideo() {
+            currentVideoIndex = (currentVideoIndex + 1) % playlist.length;
+            loadVideo(currentVideoIndex);
+            resetAutoChangeTimer();
+        }
+
+        function startAutoChange() {
+            autoChangeInterval = setInterval(nextVideo, 40000); // 30 sekundi
+        }
+
+        function resetAutoChangeTimer() {
+            clearInterval(autoChangeInterval);
+            startAutoChange();
+        }
+    </script>
+</body>
+</html>
