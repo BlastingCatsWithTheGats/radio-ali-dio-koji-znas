@@ -3,16 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouTube Video Stranica s Automatskim Prebacivanjem</title>
+    <title>YouTube Video Stranica s Nasumičnim Početkom</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
         <h1>samo dio pjesme koji znaš</h1>
         <div id="player"></div>
-        <button id="nextButton">Sljedeći Video</button>
+        <div class="controls">
+            <button id="prevButton">Prethodna Pjesma</button>
+            <button id="nextButton">Sljedeća Pjesma</button>
+        </div>
     </div>
-
     <script src="https://www.youtube.com/iframe_api"></script>
     <script>
         let player;
@@ -20,6 +22,7 @@
         const playlistId = 'PL0oP4UWb9H3eqcnHBoHkpDAPe6Nhv0UNw';
         let currentVideoIndex = 0;
         let playlist = [];
+        let isFirstSong = true;
 
         function onYouTubeIframeAPIReady() {
             player = new YT.Player('player', {
@@ -43,6 +46,7 @@
                 startAutoChange();
             });
             document.getElementById('nextButton').addEventListener('click', nextVideo);
+            document.getElementById('prevButton').addEventListener('click', prevVideo);
         }
 
         function onPlayerStateChange(event) {
@@ -62,13 +66,24 @@
                 });
         }
 
+        function getStartTime() {
+            if (isFirstSong) {
+                isFirstSong = false;
+                return 12;
+            }
+            return Math.floor(Math.random() * (55 - 35 + 1)) + 35; // Nasumično vrijeme između 35 i 55 sekundi
+        }
+
         function loadVideo(index) {
             if (index < playlist.length) {
+                const video = playlist[index];
+                const startTime = getStartTime();
                 player.loadVideoById({
-                    videoId: playlist[index].id,
-                    startSeconds: 40
+                    videoId: video.id,
+                    startSeconds: startTime
                 });
                 currentVideoIndex = index;
+                console.log(`Loading video: ${video.title}, Starting at: ${startTime}s`);
             }
         }
 
@@ -78,8 +93,14 @@
             resetAutoChangeTimer();
         }
 
+        function prevVideo() {
+            currentVideoIndex = (currentVideoIndex - 1 + playlist.length) % playlist.length;
+            loadVideo(currentVideoIndex);
+            resetAutoChangeTimer();
+        }
+
         function startAutoChange() {
-            autoChangeInterval = setInterval(nextVideo, 40000); // 30 sekundi
+            autoChangeInterval = setInterval(nextVideo, 40000); // 40 sekundi
         }
 
         function resetAutoChangeTimer() {
